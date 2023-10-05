@@ -8,9 +8,15 @@ import (
 )
 
 func main() {
+	if len(os.Args) < 2 {
+		fmt.Println("Error: no folder provided")
+		return
+	}
+
+	folderName := os.Args[1]
 	var files [1024]string
 
-	entries, err := os.ReadDir(".") //change desired directory
+	entries, err := os.ReadDir(folderName)
 
 	if err != nil {
 		log.Fatal(err)
