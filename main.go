@@ -5,33 +5,33 @@ import (
 	"log"
 	"os"
 	"os/exec"
-	"strings"
 )
 
 func main() {
 	var files [1024]string
 
-	cmd := exec.Command("ls", "./")
-	out, err := cmd.Output()
+	entries, err := os.ReadDir(".") //change desired directory
 
-	if err != nil {
-		// if there was any error, print it here
-		fmt.Println("could not run command: ", err)
-	}
-	// otherwise, print the output from running the command
-	fmt.Println("Output: \n", string(out))
-
-	entries, err := os.ReadDir("./")
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	for index, e := range entries {
-		files[index] = e.Name()
-		fmt.Println(strings.Split(files[index], "."))
-	}
+	for i, e := range entries {
+		files[i] = e.Name()
+		fmt.Println(files[i])
+		ghostscript := fmt.Sprintf("gswin64c -dPDFA -dBATCH -dNOPAUSE -sColorConversionStrategy=UseDeviceIndependentColor -sDEVICE=pdfwrite -dPDFACompatibilityPolicy=2 -sOutputFile=%v %v", files[i], files[i])
 
+		cmd := exec.Command("cmd", "/C", ghostscript)
+		//fmt.Println(cmd)
+		out, err := cmd.Output()
+
+		if err != nil {
+			fmt.Println("could not run command: ", err)
+		}
+		fmt.Println("Output: \n", string(out))
+	}
 }
 
 //gs -dPDFA -dBATCH -dNOPAUSE -dUseCIEColor -sProcessColorModel=DeviceCMYK -sDEVICE=pdfwrite -sPDFACompatibilityPolicy=1 -sOutputFile=output_filename.pdf input_filename.pdf
 /*"gswin64c -dPDFA -dBATCH -dNOPAUSE -sColorConversionStrategy=UseDeviceIndependentColor -sDEVICE=pdfwrite -dPDFACompatibilityPolicy=2 -sOutputFile=" + '"' + sPDF + '" "' + sPDFA + '"'*/
+//"gswin64c -dPDFA -dBATCH -dNOPAUSE -sColorConversionStrategy=UseDeviceIndependentColor -sDEVICE=pdfwrite -dPDFACompatibilityPolicy=2 -sOutputFile=output_filename.pdf input_filename.pdf"
