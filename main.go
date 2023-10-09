@@ -5,18 +5,23 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"time"
 )
 
 func main() {
+	currentTime := time.Now()
+
 	if len(os.Args) < 2 {
 		fmt.Println("Error: no folder provided")
 		return
 	}
 
 	folderName := os.Args[1]
+
 	var files [1024]string
 
-	entries, err := os.ReadDir(folderName)
+	os.Chdir(folderName)
+	entries, err := os.ReadDir(".")
 
 	if err != nil {
 		log.Fatal(err)
@@ -24,20 +29,27 @@ func main() {
 
 	for i, e := range entries {
 		files[i] = e.Name()
-		fmt.Println(files[i])
-		ghostscript := fmt.Sprintf("gswin64c -dPDFA -dBATCH -dNOPAUSE -sColorConversionStrategy=UseDeviceIndependentColor -sDEVICE=pdfwrite -dPDFACompatibilityPolicy=2 -sOutputFile=  %v "+" sPDF "+" %v + sPDFA", files[i], files[i])
 
-		cmd := exec.Command("cmd", "/C", ghostscript)
-		//fmt.Println(cmd)
-		out, err := cmd.Output()
-
+		fileInfo, err := os.Stat(files[i])
 		if err != nil {
-			fmt.Println("could not run command: ", err)
+			log.Fatal(err)
 		}
-		fmt.Println("Output: \n", string(out))
+		// Gives the modification time
+		modificationTime := fileInfo.ModTime()
+
+		//now.Add(-24 * time.Hour) = yesterday
+		if currentTime.Add(-24 * time.Hour).Before(modificationTime) {
+			input_file := files[i]
+			output_file := "PDFA_" + files[i]
+			ghostscript := fmt.Sprintf("gswin64c -dPDFA -dBATCH -dNOPAUSE -sColorConversionStrategy=UseDeviceIndependentColor -sDEVICE=pdfwrite -dPDFACompatibilityPolicy=2 -sOutputFile=%v %v", output_file, input_file)
+			cmd := exec.Command("cmd", "/C", ghostscript)
+			out, err := cmd.Output()
+			if err != nil {
+				fmt.Println("could not run command: ", err)
+			}
+			fmt.Println("Output: \n", string(out))
+		}
 	}
 }
 
-//gs -dPDFA -dBATCH -dNOPAUSE -dUseCIEColor -sProcessColorModel=DeviceCMYK -sDEVICE=pdfwrite -sPDFACompatibilityPolicy=1 -sOutputFile=output_filename.pdf input_filename.pdf
-/*"gswin64c -dPDFA -dBATCH -dNOPAUSE -sColorConversionStrategy=UseDeviceIndependentColor -sDEVICE=pdfwrite -dPDFACompatibilityPolicy=2 -sOutputFile=" + '"' + sPDFA + '" "' + sPDF + '"'*/
 //"gswin64c -dPDFA -dBATCH -dNOPAUSE -sColorConversionStrategy=UseDeviceIndependentColor -sDEVICE=pdfwrite -dPDFACompatibilityPolicy=2 -sOutputFile=output_filename.pdf input_filename.pdf"
