@@ -62,7 +62,6 @@ func main() {
 					fmt.Println("could not run command: ", err)
 				}
 				fmt.Println("Output: \n", string(out))
-				//uncomment to remove old files
 				//os.Remove(input_file)
 			}
 			os.Chdir(folderToRead)
