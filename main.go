@@ -5,24 +5,36 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"strings"
 	"time"
 )
 
 func main() {
-	currentTime := time.Now()
-
-	if len(os.Args) < 2 {
-		fmt.Println("Error: no folder provided")
+	if len(os.Args) < 3 {
+		fmt.Println("Error: no folders provided")
+		fmt.Println("Usage: ./main.exe C:\\folder to read from C:\\folder to write in")
 		return
 	}
 
-	folderName := os.Args[1]
-
+	currentTime := time.Now()
 	var files [1024]string
 
-	os.Chdir(folderName)
-	entries, err := os.ReadDir(".")
+	folderToRead := os.Args[1]
+	folderToWrite := os.Args[2]
 
+	if _, err := os.Stat(folderToRead); os.IsNotExist(err) {
+		fmt.Printf("%v does not exsist", folderToRead)
+		return
+	}
+
+	if _, err := os.Stat(folderToWrite); os.IsNotExist(err) {
+		fmt.Println("Folder did not exsist, it will be created now")
+		os.Mkdir(folderToWrite, 777)
+	}
+
+	os.Chdir(folderToRead)
+
+	entries, err := os.ReadDir(".")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -37,17 +49,23 @@ func main() {
 		// Gives the modification time
 		modificationTime := fileInfo.ModTime()
 
-		//now.Add(-24 * time.Hour) = yesterday
-		if currentTime.Add(-24 * time.Hour).Before(modificationTime) {
-			input_file := files[i]
-			output_file := "PDFA_" + files[i]
-			ghostscript := fmt.Sprintf("gswin64c -dPDFA -dBATCH -dNOPAUSE -sColorConversionStrategy=UseDeviceIndependentColor -sDEVICE=pdfwrite -dPDFACompatibilityPolicy=2 -sOutputFile=%v %v", output_file, input_file)
-			cmd := exec.Command("cmd", "/C", ghostscript)
-			out, err := cmd.Output()
-			if err != nil {
-				fmt.Println("could not run command: ", err)
+		if strings.Contains(files[i], ".pdf") {
+			//currentTime.Add(-24 * time.Hour) = currentTime - 24 hours
+			if currentTime.Add(-24 * time.Hour).Before(modificationTime) {
+				input_file := folderToRead + "\\" + files[i]
+				output_file := "PDFA_" + files[i]
+				ghostscript := fmt.Sprintf("gswin64c -dPDFA -dBATCH -dNOPAUSE -sColorConversionStrategy=UseDeviceIndependentColor -sDEVICE=pdfwrite -dPDFACompatibilityPolicy=2 -sOutputFile=%v %v", output_file, input_file)
+				os.Chdir(folderToWrite)
+				cmd := exec.Command("cmd", "/C", ghostscript)
+				out, err := cmd.Output()
+				if err != nil {
+					fmt.Println("could not run command: ", err)
+				}
+				fmt.Println("Output: \n", string(out))
+				//uncomment to remove old files
+				//os.Remove(input_file)
 			}
-			fmt.Println("Output: \n", string(out))
+			os.Chdir(folderToRead)
 		}
 	}
 }
